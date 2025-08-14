@@ -1,3 +1,6 @@
+CREATE DATABASE sla
+USE sla
+
 -- Tabela Cliente
 CREATE TABLE Cliente (
     cpf CHAR(11) PRIMARY KEY,
