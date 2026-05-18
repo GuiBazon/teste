@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Finance App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { 50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans antialiased">
+
+<div id="app">
+
+    <!-- ==================== LOGIN SCREEN ==================== -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm mx-auto">
+            <div class="text-center mb-6">
+                <div class="text-5xl mb-3">💰</div>
+                <h1 class="text-2xl font-bold text-slate-800">Finance App</h1>
+                <p class="text-slate-500 text-sm mt-1">Finanças pessoais &amp; familiar</p>
+            </div>
+
+            <div id="loginLoading" class="text-center py-8 text-slate-400 text-sm">Carregando usuários...</div>
+
+            <div id="loginForm" class="hidden">
+                <label class="block text-sm font-medium text-slate-600 mb-1.5" for="userSelect">Selecione seu usuário</label>
+                <select id="userSelect" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-white"></select>
+                <button onclick="login()" class="w-full mt-4 bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-xl transition-colors shadow-sm">
+                    Entrar
+                </button>
+            </div>
+
+            <p id="loginError" class="hidden text-red-500 text-sm text-center mt-3"></p>
+
+            <!-- ========== DIVIDER ========== -->
+            <div class="my-6 flex items-center gap-3 text-slate-300">
+                <span class="flex-1 h-px bg-slate-200"></span>
+                <span class="text-xs font-medium text-slate-400">ou</span>
+                <span class="flex-1 h-px bg-slate-200"></span>
+            </div>
+
+            <!-- ========== REGISTER FORM ========== -->
+            <div>
+                <p class="text-sm font-medium text-slate-600 mb-3">Cadastrar novo usuário</p>
+                <input type="text" id="regNome" placeholder="Nome"
+                       class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 mb-2">
+                <input type="email" id="regEmail" placeholder="Email"
+                       class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 mb-2">
+                <input type="password" id="regSenha" placeholder="Senha"
+                       class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 mb-2">
+                <input type="password" id="regToken" placeholder="Código de Convite"
+                       class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 mb-3">
+                <button onclick="registerUser()"
+                        class="w-full bg-white border-2 border-primary-600 text-primary-700 hover:bg-primary-50 font-medium py-2.5 px-4 rounded-xl transition-colors text-sm">
+                    Cadastrar
+                </button>
+                <p id="regError" class="hidden text-red-500 text-xs text-center mt-2"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TOAST ==================== -->
+    <div id="toast" class="fixed bottom-6 left-4 right-4 max-w-md mx-auto z-50 hidden text-center text-sm font-medium py-3 px-4 rounded-xl shadow-lg transition-all"></div>
+
+    <!-- ==================== MAIN APP ==================== -->
+    <div id="mainApp" class="hidden">
+
+        <!-- Header -->
+        <header class="bg-white shadow-sm sticky top-0 z-10">
+            <div class="max-w-2xl mx-auto flex items-center justify-between px-4 py-3">
+                <div class="flex items-center gap-2">
+                    <span class="text-lg">💰</span>
+                    <span class="font-semibold text-sm text-slate-700" id="userNameDisplay"></span>
+                </div>
+                <button onclick="logout()" class="text-sm text-red-500 hover:text-red-700 font-medium transition-colors">Sair</button>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <main class="max-w-2xl mx-auto px-4 py-5 space-y-6 pb-20">
+
+            <!-- Loading -->
+            <div id="mainLoading" class="text-center py-12 text-slate-400 text-sm">Carregando...</div>
+
+            <!-- Dashboard Content (hidden until loaded) -->
+            <div id="dashboardContent" class="hidden space-y-6">
+
+                <!-- ========== SUMMARY CARDS ========== -->
+                <div id="summaryCards" class="grid grid-cols-3 gap-3">
+                    <div class="bg-white rounded-xl shadow-sm p-4 text-center">
+                        <p class="text-xs text-slate-500 uppercase tracking-wide font-medium">Receitas</p>
+                        <p class="text-lg font-bold text-emerald-600 mt-1" id="sumReceitas">R$ 0,00</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm p-4 text-center">
+                        <p class="text-xs text-slate-500 uppercase tracking-wide font-medium">Despesas</p>
+                        <p class="text-lg font-bold text-red-500 mt-1" id="sumDespesas">R$ 0,00</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm p-4 text-center">
+                        <p class="text-xs text-slate-500 uppercase tracking-wide font-medium">Saldo</p>
+                        <p class="text-lg font-bold text-primary-600 mt-1" id="sumSaldo">R$ 0,00</p>
+                    </div>
+                </div>
+
+                <!-- ========== BUDGET SECTION ========== -->
+                <section>
+                    <h2 class="text-base font-semibold text-slate-700 mb-3">📊 Orçamento do Mês</h2>
+                    <div id="budgetList" class="space-y-3">
+                        <p class="text-slate-400 text-sm text-center py-4">Nenhum limite definido.</p>
+                    </div>
+                </section>
+
+                <!-- ========== TRANSACTION FORM ========== -->
+                <section class="bg-white rounded-xl shadow-sm p-4">
+                    <h2 class="text-base font-semibold text-slate-700 mb-4">➕ Nova Transação</h2>
+                    <form id="transactionForm" onsubmit="createTransaction(event)">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Valor</label>
+                                <input type="number" step="0.01" min="0.01" id="formValor" required
+                                       class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                       placeholder="0,00">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Data</label>
+                                <input type="date" id="formData"
+                                       class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Descrição</label>
+                            <input type="text" id="formDescricao" required
+                                   class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                   placeholder="Ex: Salário, Mercado, Aluguel...">
+                        </div>
+                        <div class="mt-3 grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Tipo</label>
+                                <select id="formTipo"
+                                        class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white">
+                                    <option value="receita">Receita</option>
+                                    <option value="despesa">Despesa</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Conta</label>
+                                <select id="formConta" required
+                                        class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white">
+                                    <option value="">Selecione</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <label class="block text-xs font-medium text-slate-500 mb-1">Categoria</label>
+                            <select id="formCategoria" required
+                                    class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white">
+                                <option value="">Selecione</option>
+                            </select>
+                        </div>
+
+                        <!-- Checkboxes -->
+                        <div class="mt-4 space-y-2">
+                            <label class="flex items-center gap-3 cursor-pointer select-none">
+                                <input type="checkbox" id="formParcelado" onchange="toggleParcelas()"
+                                       class="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500">
+                                <span class="text-sm text-slate-600">Compra Parcelada?</span>
+                            </label>
+                            <div id="parcelasGroup" class="hidden pl-7">
+                                <label class="block text-xs font-medium text-slate-500 mb-1">Número de Parcelas</label>
+                                <input type="number" id="formNumeroParcelas" min="2" max="120"
+                                       class="w-28 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                       placeholder="Ex: 12">
+                            </div>
+                            <label class="flex items-center gap-3 cursor-pointer select-none">
+                                <input type="checkbox" id="formCompartilhada"
+                                       class="w-4 h-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500">
+                                <span class="text-sm text-slate-600">Compartilhar com a Casa?</span>
+                            </label>
+                        </div>
+
+                        <button type="submit" id="formSubmitBtn"
+                                class="mt-4 w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-2.5 px-4 rounded-xl transition-colors shadow-sm text-sm">
+                            Salvar Transação
+                        </button>
+                        <p id="formError" class="hidden text-red-500 text-xs text-center mt-2"></p>
+                        <p id="formSuccess" class="hidden text-emerald-600 text-xs text-center mt-2"></p>
+                    </form>
+                </section>
+
+                <!-- ========== TRANSACTION LIST ========== -->
+                <section>
+                    <h2 class="text-base font-semibold text-slate-700 mb-3">📋 Transações do Mês</h2>
+                    <div id="transactionList" class="space-y-2">
+                        <p class="text-slate-400 text-sm text-center py-8">Nenhuma transação encontrada.</p>
+                    </div>
+                </section>
+
+                <!-- ========== EXPORT BUTTON ========== -->
+                <div class="text-center pt-2">
+                    <button onclick="exportCSV()"
+                            class="inline-flex items-center gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium py-2.5 px-6 rounded-xl transition-colors shadow-sm text-sm">
+                        <span>⬇️</span> Baixar Relatório (CSV)
+                    </button>
+                </div>
+
+            </div>
+        </main>
+    </div>
+</div>
+
+<style>
+    .progress-bar { transition: width 0.6s ease; }
+    #transactionList .tx-card:last-child { border-bottom: none; }
+    .tx-enter { animation: slideUp 0.3s ease; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
+<script>
+// ======================== STATE ========================
+let currentUser = null;
+let token = null;
+let allTransactions = [];
+let categories = [];
+let accounts = [];
+
+const now = new Date();
+const currentYear = now.getFullYear();
+const currentMonth = now.getMonth() + 1;
+
+// ======================== UTILS ========================
+function fmtCurrency(v) {
+    return 'R$ ' + Number(v).toFixed(2).replace('.', ',');
+}
+
+function _parseDateParts(d) {
+    if (!d) return null;
+    const p = d.split('T')[0].split('-');
+    if (p.length !== 3) return null;
+    return { year: parseInt(p[0]), month: parseInt(p[1]), day: parseInt(p[2]) };
+}
+
+function fmtDate(d) {
+    const p = _parseDateParts(d);
+    if (!p) return '-';
+    return `${p.day}/${String(p.month).padStart(2, '0')}/${p.year}`;
+}
+
+function flashMessage(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.classList.remove('hidden');
+    setTimeout(() => el.classList.add('hidden'), 4000);
+}
+
+function showToast(msg, type) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'fixed bottom-6 left-4 right-4 max-w-md mx-auto z-50 text-center text-sm font-medium py-3 px-4 rounded-xl shadow-lg transition-all ' +
+        (type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white');
+    el.classList.remove('hidden');
+    setTimeout(() => el.classList.add('hidden'), 4000);
+}
+
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+
+function _isCurrentMonth(dataStr) {
+    const p = _parseDateParts(dataStr);
+    return p && p.month === currentMonth && p.year === currentYear;
+}
+
+// ======================== API ========================
+async function api(url, options = {}) {
+    const headers = { 'Content-Type': 'application/json', ...options.headers };
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    const res = await fetch(url, { ...options, headers });
+    if (!res.ok) {
+        let detail = 'Erro na requisição';
+        try { const j = await res.json(); detail = j.detail || detail; } catch {}
+        throw new Error(detail);
+    }
+    if (res.status === 204) return null;
+    const ct = res.headers.get('content-type') || '';
+    return ct.includes('application/json') ? res.json() : res;
+}
+
+// ======================== AUTH ========================
+async function init() {
+    const savedToken = sessionStorage.getItem('finance_token');
+    const savedUser = sessionStorage.getItem('finance_user');
+
+    if (savedToken && savedUser) {
+        token = savedToken;
+        currentUser = JSON.parse(savedUser);
+        try {
+            await loadApp();
+            return;
+        } catch (e) {
+            sessionStorage.clear();
+            token = null;
+            currentUser = null;
+        }
+    }
+    showLoginScreen();
+}
+
+function showLoginScreen() {
+    hide('mainApp');
+    show('loginScreen');
+
+    fetch('/api/users/')
+        .then(r => r.json())
+        .then(users => {
+            hide('loginLoading');
+            show('loginForm');
+            const sel = document.getElementById('userSelect');
+            sel.innerHTML = '<option value="">-- Selecione --</option>'
+                + users.map(u => `<option value="${u.id}">${u.nome}</option>`).join('');
+        })
+        .catch(() => {
+            document.getElementById('loginLoading').textContent = 'Erro ao conectar com o servidor.';
+        });
+}
+
+async function login() {
+    const sel = document.getElementById('userSelect');
+    const userId = parseInt(sel.value);
+    if (!userId) { flashMessage('loginError', 'Selecione um usuário.'); return; }
+
+    try {
+        const data = await api('/api/users/login-dev/' + userId, { method: 'POST' });
+        token = data.access_token;
+        currentUser = data.user;
+        sessionStorage.setItem('finance_token', token);
+        sessionStorage.setItem('finance_user', JSON.stringify(currentUser));
+        await loadApp();
+    } catch (e) {
+        flashMessage('loginError', e.message);
+    }
+}
+
+async function registerUser() {
+    const nome = document.getElementById('regNome').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const senha = document.getElementById('regSenha').value;
+    const token_convite = document.getElementById('regToken').value.trim();
+
+    if (!nome || !email || !senha || !token_convite) {
+        flashMessage('regError', 'Preencha todos os campos.');
+        return;
+    }
+
+    try {
+        await api('/api/users/register', {
+            method: 'POST',
+            body: JSON.stringify({ nome, email, senha, token_convite }),
+        });
+        document.getElementById('regNome').value = '';
+        document.getElementById('regEmail').value = '';
+        document.getElementById('regSenha').value = '';
+        document.getElementById('regToken').value = '';
+        showToast('Usuário criado com sucesso!', 'success');
+        refreshUserDropdown();
+    } catch (e) {
+        flashMessage('regError', e.message);
+    }
+}
+
+function refreshUserDropdown() {
+    fetch('/api/users/')
+        .then(r => r.json())
+        .then(users => {
+            const sel = document.getElementById('userSelect');
+            sel.innerHTML = '<option value="">-- Selecione --</option>'
+                + users.map(u => `<option value="${u.id}">${u.nome}</option>`).join('');
+        })
+        .catch(() => {});
+}
+
+function logout() {
+    sessionStorage.clear();
+    token = null;
+    currentUser = null;
+    showLoginScreen();
+}
+
+// ======================== LOAD APP ========================
+async function loadApp() {
+    hide('loginScreen');
+    hide('mainLoading');
+    hide('dashboardContent');
+
+    document.getElementById('userNameDisplay').textContent = '👤 ' + currentUser.nome;
+
+    show('mainApp');
+    show('mainLoading');
+
+    try {
+        const [txData, catData, accData, orcData] = await Promise.all([
+            api('/api/transactions/'),
+            api('/api/categories/'),
+            api('/api/accounts/'),
+            api('/api/orcamento/' + currentYear + '/' + currentMonth).catch(() => []),
+        ]);
+
+        allTransactions = Array.isArray(txData) ? txData : [];
+        categories = Array.isArray(catData) ? catData : [];
+        accounts = Array.isArray(accData) ? accData : [];
+        const orcamento = Array.isArray(orcData) ? orcData : [];
+
+        hide('mainLoading');
+        show('dashboardContent');
+
+        renderSummary();
+        renderBudget(orcamento);
+        populateFormSelects();
+        renderTransactions();
+    } catch (e) {
+        document.getElementById('mainLoading').textContent = 'Erro ao carregar dados: ' + e.message;
+    }
+}
+
+// ======================== SUMMARY ========================
+function renderSummary() {
+    const monthTx = allTransactions.filter(t => _isCurrentMonth(t.data));
+
+    let receitas = 0, despesas = 0;
+    monthTx.forEach(t => {
+        if (t.tipo === 'receita') receitas += t.valor;
+        else despesas += t.valor;
+    });
+
+    document.getElementById('sumReceitas').textContent = fmtCurrency(receitas);
+    document.getElementById('sumDespesas').textContent = fmtCurrency(despesas);
+    document.getElementById('sumSaldo').textContent = fmtCurrency(receitas - despesas);
+}
+
+// ======================== BUDGET ========================
+function renderBudget(data) {
+    const container = document.getElementById('budgetList');
+    if (!data || data.length === 0) {
+        container.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">Nenhum limite definido.</p>';
+        return;
+    }
+
+    container.innerHTML = data.map(item => {
+        const pct = item.limite > 0 ? Math.min((item.total_gasto / item.limite) * 100, 100) : 0;
+        let barColor = 'bg-emerald-500';
+        if (pct > 80) barColor = 'bg-red-500';
+        else if (pct > 50) barColor = 'bg-yellow-500';
+
+        return `<div class="bg-white rounded-xl shadow-sm p-4">
+            <div class="flex justify-between items-center mb-1.5">
+                <span class="text-sm font-medium text-slate-700">${item.categoria}</span>
+                <span class="text-xs text-slate-500">${fmtCurrency(item.total_gasto)} / ${fmtCurrency(item.limite)}</span>
+            </div>
+            <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                <div class="progress-bar h-full rounded-full ${barColor}" style="width:${pct}%"></div>
+            </div>
+            <div class="flex justify-between items-center mt-1">
+                <span class="text-xs text-slate-400">${pct.toFixed(0)}% utilizado</span>
+                <span class="text-xs font-medium ${item.saldo_restante >= 0 ? 'text-emerald-600' : 'text-red-500'}">
+                    ${item.saldo_restante >= 0 ? 'Restam' : 'Excedido'} ${fmtCurrency(Math.abs(item.saldo_restante))}
+                </span>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ======================== FORM ========================
+function populateFormSelects() {
+    const catSelect = document.getElementById('formCategoria');
+    catSelect.innerHTML = '<option value="">Selecione</option>'
+        + categories.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+
+    const accSelect = document.getElementById('formConta');
+    accSelect.innerHTML = '<option value="">Selecione</option>'
+        + accounts.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+
+    document.getElementById('formData').value = now.toISOString().split('T')[0];
+}
+
+function toggleParcelas() {
+    const checked = document.getElementById('formParcelado').checked;
+    document.getElementById('parcelasGroup').classList.toggle('hidden', !checked);
+}
+
+async function createTransaction(e) {
+    e.preventDefault();
+    const btn = document.getElementById('formSubmitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+    hide('formError');
+    hide('formSuccess');
+
+    const body = {
+        descricao: document.getElementById('formDescricao').value,
+        valor: parseFloat(document.getElementById('formValor').value),
+        tipo: document.getElementById('formTipo').value,
+        data: document.getElementById('formData').value || null,
+        conta_id: parseInt(document.getElementById('formConta').value),
+        categoria_id: parseInt(document.getElementById('formCategoria').value),
+        compartilhada: document.getElementById('formCompartilhada').checked,
+        parcelado: document.getElementById('formParcelado').checked,
+        numero_parcelas: null,
+        parcela_atual: null,
+    };
+
+    if (body.parcelado) {
+        const n = parseInt(document.getElementById('formNumeroParcelas').value);
+        if (!n || n < 2) { flashMessage('formError', 'Informe ao menos 2 parcelas.'); btn.disabled = false; btn.textContent = 'Salvar Transação'; return; }
+        body.numero_parcelas = n;
+    }
+
+    try {
+        await api('/api/transactions/', { method: 'POST', body: JSON.stringify(body) });
+        document.getElementById('transactionForm').reset();
+        document.getElementById('formData').value = now.toISOString().split('T')[0];
+        toggleParcelas();
+        showToast('Transação salva com sucesso!', 'success');
+        const txData = await api('/api/transactions/');
+        allTransactions = Array.isArray(txData) ? txData : [];
+        renderSummary();
+        renderTransactions();
+        const orcData = await api('/api/orcamento/' + currentYear + '/' + currentMonth).catch(() => []);
+        renderBudget(Array.isArray(orcData) ? orcData : []);
+    } catch (e) {
+        flashMessage('formError', e.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Salvar Transação';
+    }
+}
+
+// ======================== TRANSACTION LIST ========================
+function renderTransactions() {
+    const container = document.getElementById('transactionList');
+    const monthTx = allTransactions
+        .filter(t => _isCurrentMonth(t.data))
+        .sort((a, b) => {
+            const da = a.data || '';
+            const db = b.data || '';
+            return db.localeCompare(da);
+        })
+        .slice(0, 50);
+
+    if (monthTx.length === 0) {
+        container.innerHTML = '<p class="text-slate-400 text-sm text-center py-8">Nenhuma transação neste mês.</p>';
+        return;
+    }
+
+    container.innerHTML = monthTx.map(t => {
+        const sign = t.tipo === 'receita' ? 'text-emerald-600' : 'text-red-500';
+        const prefix = t.tipo === 'receita' ? '+' : '-';
+        const compartilhadaTag = t.compartilhada
+            ? '<span class="text-[10px] bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full font-medium ml-1">Compartilhada</span>'
+            : '';
+        return `<div class="tx-card bg-white rounded-xl shadow-sm px-4 py-3 flex items-center justify-between tx-enter">
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-slate-800 truncate">${t.descricao} ${compartilhadaTag}</p>
+                <p class="text-xs text-slate-400 mt-0.5">${fmtDate(t.data)}</p>
+            </div>
+            <div class="text-right ml-3 flex-shrink-0">
+                <p class="text-sm font-bold ${sign}">${prefix}${fmtCurrency(t.valor)}</p>
+                ${t.parcelado ? `<p class="text-[10px] text-slate-400">${t.parcela_atual}/${t.numero_parcelas}</p>` : ''}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ======================== EXPORT ========================
+async function exportCSV() {
+    const url = '/api/exportar/' + currentUser.id + '/' + currentYear + '/' + currentMonth;
+    try {
+        const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+        if (!res.ok) { const j = await res.json(); throw new Error(j.detail || 'Erro ao exportar'); }
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'transacoes_' + currentYear + '_' + String(currentMonth).padStart(2, '0') + '.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+        showToast('Relatório baixado com sucesso!', 'success');
+    } catch (e) {
+        showToast('Erro ao exportar: ' + e.message);
+    }
+}
+
+// ======================== START ========================
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
