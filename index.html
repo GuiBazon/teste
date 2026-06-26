@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Painel de Especialidades</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilização customizada para a barra de rolagem */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <header class="bg-blue-600 text-white shadow-md p-6">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">Painel de Progressão Pessoal</h1>
+                <p class="text-blue-100 text-sm mt-1">Ramo Sênior • Tropa Taús • Patrulha Xingu</p>
+            </div>
+            <div class="bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium">
+                Progresso: <span id="stats-counter" class="font-bold text-yellow-300">0/0</span> Concluídas
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl w-full mx-auto p-4 flex-1">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6 flex flex-col md:flex-row gap-4">
+            <div class="flex-1">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Buscar Especialidade</label>
+                <input type="text" id="search-input" placeholder="Digite para filtrar... (Ex: Acampamento)" 
+                    class="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+            </div>
+            
+            <div class="w-full md:w-48">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Filtrar por Status</label>
+                <select id="status-filter" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                    <option value="all">Todas</option>
+                    <option value="todo">Não Iniciadas</option>
+                    <option value="wip">Em Andamento</option>
+                    <option value="done">Concluídas</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="grid-especialidades" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            </div>
+    </main>
+
+    <script>
+        // Array bruto com a lista que você copiou (mantendo duplicadas)
+        const listaBruta = [
+            "Acampamento", "Acampamento", "Acampamento de Mínimo Impacto", "Administração", "Administração", "Aeromodelismo", "Aeronáutica", "Agricultura", "Agricultura", "Alfabetização", "Almoxarifado", "Anatomia Humana", "Animação da Fé", "Animais Peçonhentos", "Animais peçonhentos e venenosos", "Anime", "Anime", "Aquariofilia", "Aquarismo", "Aquicultura", "Aquicultura", "Arco e Flecha", "Arqueologia", "Arqueologia", "Arquitetura", "Arquitetura e Urbanismo", "Arte da Marinharia", "Arte da Marinharia", "Arte Digital", "Arte Digital", "Arte em Origami", "Artes Cênicas", "Artes Cênicas", "Artes Gráficas", "Artes Marciais", "Artes Visuais", "Artesanato", "Artesanato", "Astronáutica", "Astronomia", "Astronomia", "Automobilismo Rádio Controlado", "Babá", "Barismo", "Basquetebol", "Bateria", "Biblioteconomia", "Biblioteconomia", "Biologia", "Biologia", "Bolsa de Valores", "Botânica", "Boxe", "Braille", "Brasilidades", "Budismo", "Canoagem", "Canto", "Capoeira", "Capoeira", "Carpintaria", "Cartografia", "Cartografia", "Churrasco", "Ciclismo", "Cidadania do Mundo", "Ciências da Terra", "Cinefilia", "Civilizações da Antiguidade", "Civismo", "Coleções", "Comédia", "Comédia", "Comércio Exterior", "Compostagem", "Comunicações", "Comunicações", "Confeitaria", "Confeitaria", "Construção Civil", "Construção Civil", "Contabilidade", "Corrida de Orientação", "Corrida de Orientação", "Corrida de Rua", "Cosplay", "Cosplay", "Costura", "Costura e Estilismo", "Criação de Animais de Estimação", "Criptografia", "Criptografia", "Cubo Mágico", "Cuidados Bucais", "Cuidados com Animais de Estimação", "Cuidados com Idosos", "Culinária", "Culinária", "Culinária Mateira", "Culinária Mateira", "Culinária Típica", "Culinária Vegetariana", "Cultura Brasileira", "Dança", "Dança Folclórica", "Danças Folclóricas", "Decoração", "Defesa Civil", "Defesa Civil", "Defesa Nacional", "Design de Interiores", "Desportos Inclusivos", "DJ", "Dublagem", "E-sports", "E-Sports", "Echolink", "Ecumenismo", "Educação Financeira", "Educação Financeira", "Egiptologia", "Eletrônica", "Empreendedorismo", "Empreendedorismo", "Encadernação", "Encadernação", "Energia", "Energia", "Engenharia", "Engenharia Aeronáutica", "Entomologia", "Entomologia", "Entrega de Mensagens", "Escalada", "Escalada", "Escotismo Mundial", "Esgrima", "Espeleoturismo", "Espeleoturismo", "Estilismo", "Estudos da Bíblia", "Estudos Desportivos", "Etiqueta", "Etiqueta", "Excursões", "Excursões", "Faixa do Cidadão", "Ferramentas de Corte", "Ferramentas de Corte", "Fiscalização de Pátio de Aeródromo", "Fiscalização de Pátio de Aeródromo", "Fogo de Conselho", "Fogo de Conselho", "Fotografia", "Fotografia", "Fotografia Digital", "Futebol", "Futebol de Mesa", "Gamão", "Garçom", "Genealogia", "Genealogia", "Gênero Musical (antigo Rock)", "Geocaching", "Geografia", "Geografia", "Geologia", "Geologia", "Ginástica", "Ginástica Rítmica", "GPS", "GPS", "Grafite", "Grafite", "Handebol", "Herpetologia", "Hidrografia", "Hipismo", "Hipismo Rural", "História Aeroespacial", "História Brasileira", "História da Arte", "História da Igreja Católica", "História do Escotismo", "História Local", "História Marítima", "História Mundial", "Horticultura", "Horticultura", "HQ", "HQ", "Ictiologia", "Inclusão", "Informações Turísticas", "Informática", "Informática", "Internet", "Invenção", "Investigação", "Ioiô", "Jardinagem", "Jardinagem e Paisagismo", "Jogos de Cartas Colecionáveis", "Jogos de Tabuleiro", "Jornalismo", "Jornalismo", "Leis", "Leitura", "Lenhador", "Libras", "Licenciatura", "Lides Campeiras", "Línguas", "Literatura", "Liturgia Católica", "Mágica e Ilusionismo", "Malabares", "Manicure", "Manicure", "Manutenção Elétrica", "Manutenção Elétrica", "Maquete", "Maquete", "Maquiagem", "Marcenaria", "Marcenaria", "Marinharia", "Marinharia", "Matemática", "Matemática", "Mecânica Aérea", "Mecânica de Automóveis", "Mecânica de Automóveis", "Mecânica de Motor de Popa", "Meliponicultura", "Meliponicultura", "Mergulho", "Mergulho Autônomo Amador", "Mergulho Livre", "Meteorologia", "Meteorologia", "Microbiologia", "Microbiologia", "Mineralogia", "Minhocultura", "Missionário Católico", "Mitologia", "Montanhismo", "Montanhismo", "Mountain Bike", "Mountain Bike", "Multimídia", "Musculação", "Museologia", "Música", "Natação", "Navegação Aérea", "Numismática", "Nutrição", "Observação Aérea", "Oceanologia", "Oceanologia", "Oratória", "Oratória", "Ornitologia", "Paisagismo", "Paleontologia", "Paraquedismo", "Parkour", "Patinação", "Pesca", "Pesca", "Pintura", "Pintura", "Pintura e Desenho Artístico", "Pintura em Tela", "Pioneiria", "Pioneiria", "Pipas", "Planador", "Planador", "Plantas Medicinais", "Plastimodelismo", "Plastimodelismo", "Poesia", "Prática Desportiva", "Prevenção à Fake News", "Prevenção ao Alcoolismo", "Prevenção ao Bullying", "Prevenção ao Crime", "Prevenção ao Uso de Drogas", "Prevenção de Incêndio", "Prevenção de Incêndio", "Prevenção em Saúde", "Primeiros Socorros", "Produção Áudio Visual", "Produção de Laticínios", "Produção Gráfica", "Programação", "Programação", "Propaganda e Marketing", "Propaganda e Marketing", "Proteção Animal", "Proteção de Animais Silvestres", "Quebra-Cabeça", "Química", "Química", "Radioamadorismo", "Radioamadorismo", "Radioescuta", "Radioescuta", "Rastreamento", "Rastreamento", "Reciclagem", "Recreação Infantil", "Redes de Computadores", "Remo", "Reparos Domésticos", "Reparos Domésticos", "Reparos Navais", "Road Bike", "Robótica", "Robótica", "RPG (Role-Playing Game)", "Salvamento", "Saneamento Ambiental", "Secretariado", "Segurança", "Segurança Aérea", "Segurança Doméstica", "Segurança no Mar", "Segurança no Trabalho", "Segurança no Transito", "Segurança no Trânsito", "Segurança Pública", "Serralheria", "Simulação Aérea", "Simulação Aérea", "Sinalização", "Sinalização", "Skateboard", "Slackline", "Slime", "Sobrevivência", "Sobrevivência", "Sobrevivência no Mar", "Socorrismo", "Softbol", "Stand Up Paddle", "Surf", "Tecido Acrobático", "Técnica Aeronáutica", "Técnicas de Sapa", "Técnicas Verticais", "Tênis", "Tênis de Mesa", "Topografia", "Trabalho Voluntário", "Tradições", "Tradições Indígenas", "Transporte Ferroviário", "Triatlo", "Vela", "Vendas", "Vendas", "Vídeo Maker", "Videogame", "Videomaker", "Vigilância Epidemiológica", "Vitrines", "Voleibol", "Web Design", "Web Design", "Xadrez", "Yoga", "Zoobotânica", "Zoologia"
+        ];
+
+        // Mapeando a lista para objetos com IDs únicos para gerenciar duplicados corretamente
+        let especialidades = [];
+
+        // Inicializa o sistema buscando dados do LocalStorage ou usando a lista padrão
+        function init() {
+            const dadosSalvos = localStorage.getItem('minhas_especialidades');
+            if (dadosSalvos) {
+                especialidades = JSON.parse(dadosSalvos);
+            } else {
+                especialidades = listaBruta.map((nome, index) => ({
+                    id: index,
+                    nome: nome,
+                    status: 'todo' // 'todo' = Não iniciado, 'wip' = Em andamento, 'done' = Concluído
+                }));
+                salvarDados();
+            }
+            render();
+        }
+
+        function salvarDados() {
+            localStorage.setItem('minhas_especialidades', JSON.stringify(especialidades));
+            atualizarEstatisticas();
+        }
+
+        function atualizarEstatisticas() {
+            const concluidas = especialidades.filter(e => e.status === 'done').length;
+            document.getElementById('stats-counter').innerText = `${concluidas}/${especialidades.length}`;
+        }
+
+        // Altera o status da especialidade (Roda no evento 'change' do select de cada card)
+        function alterarStatus(id, novoStatus) {
+            especialidades = especialidades.map(e => e.id === id ? { ...e, status: novoStatus } : e);
+            salvarDados();
+            
+            // Pequeno delay visual para dar feedback se estiver filtrado
+            const filtroAtual = document.getElementById('status-filter').value;
+            if (filtroAtual !== 'all') {
+                render();
+            }
+        }
+
+        // Função principal de Renderização na Tela (Manipulação de DOM pura)
+        function render() {
+            const grid = document.getElementById('grid-especialidades');
+            const termoBusca = document.getElementById('search-input').value.toLowerCase();
+            const filtroStatus = document.getElementById('status-filter').value;
+
+            grid.innerHTML = ''; // Limpa a tela antes de renderizar
+
+            especialidades.forEach(e => {
+                // Regras de Filtro (Busca por texto + Status do Select)
+                const bateComBusca = e.nome.toLowerCase().includes(termoBusca);
+                const bateComStatus = filtroStatus === 'all' || e.status === filtroStatus;
+
+                if (bateComBusca && bateComStatus) {
+                    // Configuração de cores dinamicas baseadas no status
+                    let bgCard = 'bg-white border-slate-200';
+                    let selectColor = 'bg-slate-100 text-slate-700';
+                    
+                    if (e.status === 'wip') {
+                        bgCard = 'bg-amber-50 border-amber-300';
+                        selectColor = 'bg-amber-100 text-amber-800 border-amber-400';
+                    } else if (e.status === 'done') {
+                        bgCard = 'bg-emerald-50 border-emerald-300';
+                        selectColor = 'bg-emerald-100 text-emerald-800 border-emerald-400';
+                    }
+
+                    const card = document.createElement('div');
+                    card.className = `border rounded-xl p-4 flex flex-col justify-between shadow-sm transition-all hover:shadow-md ${bgCard}`;
+                    card.innerHTML = `
+                        <div class="mb-3">
+                            <h3 class="font-semibold text-slate-800 text-base leading-tight">${e.nome}</h3>
+                            <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">ID: #${e.id}</span>
+                        </div>
+                        <div>
+                            <select onchange="alterarStatus(${e.id}, this.value)" 
+                                class="w-full text-xs font-medium rounded-md p-2 border focus:outline-none transition-colors cursor-pointer ${selectColor}">
+                                <option value="todo" ${e.status === 'todo' ? 'selected' : ''}>❌ Não Iniciada</option>
+                                <option value="wip" ${e.status === 'wip' ? 'selected' : ''}>⏳ Em Andamento</option>
+                                <option value="done" ${e.status === 'done' ? 'selected' : ''}>✅ Concluída</option>
+                            </select>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                }
+            });
+        }
+
+        // Listeners dos Inputs para filtro reativo (Roda a função sempre que digita ou muda o select)
+        document.getElementById('search-input').addEventListener('input', render);
+        document.getElementById('status-filter').addEventListener('change', render);
+
+        // Inicializa o script quando a página carrega
+        window.onload = init;
+    </script>
+</body>
+</html>
